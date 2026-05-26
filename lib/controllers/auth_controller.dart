@@ -44,13 +44,40 @@ class AuthController extends GetxController {
     }
   }
 
+  Map<String, dynamic> _userModelToLocalMap(UserModel user) {
+    return {
+      'uid': user.uid,
+      'name': user.name,
+      'email': user.email,
+      'photoUrl': user.photoUrl,
+      'bio': user.bio,
+      'isOnline': user.isOnline,
+      'lastSeen': user.lastSeen.toIso8601String(),
+    };
+  }
+
+  UserModel _userModelFromLocalMap(Map<String, dynamic> map) {
+    return UserModel(
+      uid: map['uid'] ?? '',
+      name: map['name'] ?? '',
+      email: map['email'] ?? '',
+      photoUrl: map['photoUrl'] ?? '',
+      bio: map['bio'] ?? "Hey there! I am using this premium chat app.",
+      isOnline: map['isOnline'] ?? false,
+      lastSeen: map['lastSeen'] != null ? DateTime.parse(map['lastSeen']) : DateTime.now(),
+    );
+  }
+
   Future<void> _saveUserLocally(UserModel user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('cached_user', jsonEncode(user.toMap()));
+      final localMap = _userModelToLocalMap(user);
+      final jsonStr = jsonEncode(localMap);
+      await prefs.setString('cached_user', jsonStr);
       await prefs.setBool('is_demo_mode', isDemoMode);
+      print("[AUTH DEBUG] _saveUserLocally: Successfully saved user: ${user.name} (${user.email}) to SharedPreferences.");
     } catch (e) {
-      print("Error saving user locally: $e");
+      print("[AUTH DEBUG] Error saving user locally: $e");
     }
   }
 
@@ -59,8 +86,9 @@ class AuthController extends GetxController {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('cached_user');
       await prefs.remove('is_demo_mode');
+      print("[AUTH DEBUG] _clearLocalUser: Successfully cleared local storage session.");
     } catch (e) {
-      print("Error clearing local user: $e");
+      print("[AUTH DEBUG] Error clearing local user: $e");
     }
   }
 
@@ -68,23 +96,28 @@ class AuthController extends GetxController {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userStr = prefs.getString('cached_user');
+      print("[AUTH DEBUG] _loadLocalUser: Retrieved cache string: $userStr");
       if (userStr != null) {
         final savedDemoMode = prefs.getBool('is_demo_mode') ?? true;
         _isDemoMode.value = savedDemoMode;
-        return UserModel.fromMap(jsonDecode(userStr));
+        final decodedUser = _userModelFromLocalMap(jsonDecode(userStr));
+        print("[AUTH DEBUG] _loadLocalUser: Successfully loaded cached profile: ${decodedUser.name} (${decodedUser.email})");
+        return decodedUser;
       }
     } catch (e) {
-      print("Error loading local user: $e");
+      print("[AUTH DEBUG] Error loading local user: $e");
     }
     return null;
   }
 
   Future<void> _initAuth() async {
     _isLoading.value = true;
+    print("[AUTH DEBUG] _initAuth: Initializing authentication flow...");
 
     // 1. Instantly retrieve and load user profile data from local storage first
     final cachedUser = await _loadLocalUser();
     if (cachedUser != null) {
+      print("[AUTH DEBUG] _initAuth: Cached user session found. Performing instant redirect: ${cachedUser.name}");
       _currentUser.value = cachedUser;
       if (isDemoMode) {
         _mockDataService.currentUser = cachedUser;
@@ -98,6 +131,7 @@ class AuthController extends GetxController {
       return;
     }
 
+    print("[AUTH DEBUG] _initAuth: No cached user session found. Initializing Firebase standard flow...");
     // 2. If no cache, perform standard initial authentication check
     await _firebaseService.initialize();
 
@@ -105,11 +139,14 @@ class AuthController extends GetxController {
       _isDemoMode.value = false;
       final fbUser = _firebaseService.currentFirebaseUser;
       if (fbUser != null) {
+        print("[AUTH DEBUG] _initAuth: Active Firebase Auth user found: ${fbUser.email}. Fetching details from Firestore...");
         final details = await _firebaseService.getUserDetails(fbUser.uid);
         if (details != null) {
+          print("[AUTH DEBUG] _initAuth: Firestore user details found: ${details.name}");
           _currentUser.value = details;
           await _saveUserLocally(details);
         } else {
+          print("[AUTH DEBUG] _initAuth: Firestore user details empty. Building robust defensive fallback...");
           // Robust defensive fallback
           final fallbackUser = UserModel(
             uid: fbUser.uid,
@@ -126,9 +163,11 @@ class AuthController extends GetxController {
           await _saveUserLocally(fallbackUser);
         }
       } else {
+        print("[AUTH DEBUG] _initAuth: No active Firebase Auth user.");
         _currentUser.value = null;
       }
     } else {
+      print("[AUTH DEBUG] _initAuth: Firebase is not configured. Defaulting to Demo Mode.");
       _isDemoMode.value = true;
       _currentUser.value = null;
     }
@@ -139,8 +178,35 @@ class AuthController extends GetxController {
     _steerUser(_currentUser.value);
   }
 
+  Future<void> refreshUserProfile() async {
+    print("[AUTH DEBUG] refreshUserProfile: Fetching latest user details on view mount...");
+    if (isDemoMode) {
+      print("[AUTH DEBUG] refreshUserProfile: Running in Demo Mode. Skipping cloud database fetch.");
+      return;
+    }
+    try {
+      final fbUser = _firebaseService.currentFirebaseUser;
+      if (fbUser != null) {
+        print("[AUTH DEBUG] refreshUserProfile: Querying Cloud Firestore for UID: ${fbUser.uid}");
+        final details = await _firebaseService.getUserDetails(fbUser.uid);
+        if (details != null) {
+          print("[AUTH DEBUG] refreshUserProfile: Retrieved latest profile: ${details.name}, Image: ${details.photoUrl}");
+          _currentUser.value = details;
+          await _saveUserLocally(details);
+        } else {
+          print("[AUTH DEBUG] refreshUserProfile: Firestore document not found for UID: ${fbUser.uid}");
+        }
+      } else {
+        print("[AUTH DEBUG] refreshUserProfile: No authenticated Firebase user active.");
+      }
+    } catch (e) {
+      print("[AUTH DEBUG] refreshUserProfile error: $e");
+    }
+  }
+
   Future<void> _initializeFirebaseInBackground() async {
     try {
+      print("[AUTH DEBUG] _initializeFirebaseInBackground: Running in background...");
       await _firebaseService.initialize();
       if (_firebaseService.isFirebaseConfigured) {
         _isDemoMode.value = false;
@@ -148,13 +214,14 @@ class AuthController extends GetxController {
         if (fbUser != null) {
           final details = await _firebaseService.getUserDetails(fbUser.uid);
           if (details != null) {
+            print("[AUTH DEBUG] _initializeFirebaseInBackground: Synchronized latest profile: ${details.name}");
             _currentUser.value = details;
             await _saveUserLocally(details);
           }
         }
       }
     } catch (e) {
-      print("Background database initialization: $e");
+      print("[AUTH DEBUG] Background database initialization skipped: $e");
     }
   }
 

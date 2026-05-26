@@ -135,11 +135,11 @@ class FirebaseService {
   Future<void> updateUserProfile(UserModel user) async {
     if (!_isFirebaseConfigured) return;
     try {
-      await _firestore.collection('users').doc(user.uid).update({
+      await _firestore.collection('users').doc(user.uid).set({
         'name': user.name,
         'bio': user.bio,
         'photoUrl': user.photoUrl,
-      });
+      }, SetOptions(merge: true));
     } catch (e) {
       print("Error updating profile: $e");
       rethrow;
