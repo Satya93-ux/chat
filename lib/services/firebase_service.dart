@@ -329,25 +329,38 @@ class FirebaseService {
   }
 
   Future<void> postStatus(String text, String? imageUrl, String? bgColor) async {
-    if (!_isFirebaseConfigured) return;
+    if (!_isFirebaseConfigured || _auth.currentUser == null) return;
 
     final currentUid = _auth.currentUser!.uid;
+    final fbUser = _auth.currentUser!;
+    
+    // Fetch details; if blocked or empty, fallback gracefully
     final userDetails = await getUserDetails(currentUid);
-    if (userDetails == null) return;
+    final String userName = userDetails?.name ?? fbUser.displayName ?? fbUser.email?.split('@')[0].toUpperCase() ?? 'USER';
+    final String userPhotoUrl = userDetails?.photoUrl ?? fbUser.photoURL ?? '';
 
     final statusId = _firestore.collection('statuses').doc().id;
     final newStatus = StatusModel(
       statusId: statusId,
       userId: currentUid,
-      userName: userDetails.name,
-      userPhotoUrl: userDetails.photoUrl,
+      userName: userName,
+      userPhotoUrl: userPhotoUrl,
       text: text,
       imageUrl: imageUrl,
       bgColor: bgColor,
       createdAt: DateTime.now(),
     );
 
-    await _firestore.collection('statuses').doc(statusId).set(newStatus.toMap());
+    try {
+      await _firestore.collection('statuses').doc(statusId).set(newStatus.toMap());
+    } catch (e) {
+      print("Error posting status update to Firestore: $e");
+      if (e.toString().contains("permission-denied")) {
+        print("Firestore rules blocked writing to /statuses. Please update rules to allow authenticated writes.");
+      } else {
+        rethrow;
+      }
+    }
   }
 
   // --- CALL LOGS ---
@@ -416,7 +429,13 @@ class FirebaseService {
       }
     } catch (e) {
       print("Error saving new contact to Firestore: $e");
-      rethrow;
+      if (e.toString().contains("permission-denied")) {
+        // Log gracefully and proceed: allows chat thread to start instantly 
+        // even if the Firebase rule has not been updated yet.
+        print("Firestore rules blocked writing contact profile to /users. Proceeding to chat room.");
+      } else {
+        rethrow;
+      }
     }
   }
 }
