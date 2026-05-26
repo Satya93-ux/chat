@@ -33,21 +33,21 @@ class MockDataService {
   }
 
   Stream<List<ChatModel>> getChatsListStream() {
-    _emitChatsList();
+    emitChatsList();
     return _chatsListStreamController.stream;
   }
 
   Stream<List<CallModel>> getCallsListStream() {
-    _emitCallsList();
+    emitCallsList();
     return _callsListStreamController.stream;
   }
 
   Stream<List<StatusModel>> getStatusesListStream() {
-    _emitStatusesList();
+    emitStatusesList();
     return _statusesListStreamController.stream;
   }
 
-  void _emitChatsList() {
+  void emitChatsList() {
     final list = mockUsers.map((user) {
       final messages = mockChats[user.uid] ?? [];
       final lastMsg = messages.isNotEmpty ? messages.last.content : "Tap to start chatting";
@@ -69,18 +69,18 @@ class MockDataService {
     _chatsListStreamController.add(list);
   }
 
-  void _emitCallsList() {
+  void emitCallsList() {
     _callsListStreamController.add(List.from(mockCalls));
   }
 
-  void _emitStatusesList() {
+  void emitStatusesList() {
     _statusesListStreamController.add(List.from(mockStatuses));
   }
 
   void addMockUser(UserModel user) {
     if (!mockUsers.any((u) => u.uid == user.uid)) {
       mockUsers.add(user);
-      _emitChatsList();
+      emitChatsList();
     }
   }
 
@@ -101,7 +101,7 @@ class MockDataService {
     
     mockChats[contactId]!.add(newMsg);
     _chatStreamControllers[contactId]?.add(mockChats[contactId]!);
-    _emitChatsList();
+    emitChatsList();
 
     // Trigger an elegant auto-response simulation
     _triggerAutoReply(contactId);
@@ -137,7 +137,7 @@ class MockDataService {
 
       mockChats[contactId]!.add(replyMsg);
       _chatStreamControllers[contactId]?.add(mockChats[contactId]!);
-      _emitChatsList();
+      emitChatsList();
     });
   }
 
@@ -153,7 +153,7 @@ class MockDataService {
       createdAt: DateTime.now(),
     );
     mockStatuses.insert(0, newStatus);
-    _emitStatusesList();
+    emitStatusesList();
   }
 
   void addCallLog({
@@ -173,7 +173,7 @@ class MockDataService {
       isVideo: isVideo,
     );
     mockCalls.insert(0, newCall);
-    _emitCallsList();
+    emitCallsList();
   }
 
   void markAsRead(String contactId) {
@@ -195,7 +195,7 @@ class MockDataService {
     }
     if (changed) {
       _chatStreamControllers[contactId]?.add(messages);
-      _emitChatsList();
+      emitChatsList();
     }
   }
 

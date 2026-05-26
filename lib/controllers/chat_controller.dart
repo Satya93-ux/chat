@@ -148,6 +148,30 @@ class ChatController extends GetxController {
       );
     }
   }
+
+  Future<UserModel> addContact({required String name, required String phoneNumber}) async {
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    final uid = 'user_$cleanPhone';
+    
+    final newUser = UserModel(
+      uid: uid,
+      name: name,
+      email: '${name.toLowerCase().replaceAll(' ', '')}@example.com',
+      photoUrl: '', // Default placeholder avatar
+      bio: 'Hey there! I am using this premium chat app.',
+      isOnline: false,
+      lastSeen: DateTime.now(),
+      phoneNumber: phoneNumber,
+    );
+
+    if (isDemoMode) {
+      _mockDataService.addMockUser(newUser);
+    } else {
+      await _firebaseService.saveNewContactToFirestore(newUser);
+    }
+    
+    return newUser;
+  }
 }
 
 // Helper extension to seed initial values to dynamic streams

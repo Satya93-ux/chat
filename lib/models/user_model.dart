@@ -8,6 +8,7 @@ class UserModel {
   final String bio;
   final bool isOnline;
   final DateTime lastSeen;
+  final String phoneNumber;
 
   UserModel({
     required this.uid,
@@ -17,6 +18,7 @@ class UserModel {
     this.bio = "Hey there! I am using this premium chat app.",
     this.isOnline = false,
     required this.lastSeen,
+    this.phoneNumber = '',
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -30,6 +32,7 @@ class UserModel {
       lastSeen: map['lastSeen'] != null 
           ? (map['lastSeen'] as Timestamp).toDate()
           : DateTime.now(),
+      phoneNumber: map['phoneNumber'] ?? '',
     );
   }
 
@@ -42,6 +45,7 @@ class UserModel {
       'bio': bio,
       'isOnline': isOnline,
       'lastSeen': Timestamp.fromDate(lastSeen),
+      'phoneNumber': phoneNumber,
     };
   }
 
@@ -53,6 +57,7 @@ class UserModel {
     String? bio,
     bool? isOnline,
     DateTime? lastSeen,
+    String? phoneNumber,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -62,6 +67,7 @@ class UserModel {
       bio: bio ?? this.bio,
       isOnline: isOnline ?? this.isOnline,
       lastSeen: lastSeen ?? this.lastSeen,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
     );
   }
 }

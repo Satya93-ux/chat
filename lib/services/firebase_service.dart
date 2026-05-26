@@ -406,4 +406,17 @@ class FirebaseService {
       'isVideo': isVideo,
     });
   }
+
+  Future<void> saveNewContactToFirestore(UserModel user) async {
+    if (!_isFirebaseConfigured) return;
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (!doc.exists) {
+        await _firestore.collection('users').doc(user.uid).set(user.toMap());
+      }
+    } catch (e) {
+      print("Error saving new contact to Firestore: $e");
+      rethrow;
+    }
+  }
 }

@@ -6,6 +6,7 @@ import 'package:chat/controllers/chat_controller.dart';
 import 'package:chat/controllers/auth_controller.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class StatusTab extends StatefulWidget {
   const StatusTab({super.key});
@@ -130,6 +131,20 @@ class _StatusTabState extends State<StatusTab> {
 
   Future<void> _pickAndPostImageStatus() async {
     try {
+      final cameraStatus = await Permission.camera.request();
+      final photosStatus = await Permission.photos.request();
+      
+      if (!cameraStatus.isGranted || !photosStatus.isGranted) {
+        Get.snackbar(
+          "Permissions Required",
+          "Camera and Photo Gallery permissions are necessary to capture and upload your status update! 📸✨",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
       final picker = ImagePicker();
       final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
       if (picked != null) {
