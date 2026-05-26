@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:chat/models/user_model.dart';
 import 'package:chat/services/firebase_service.dart';
 import 'package:chat/services/mock_data_service.dart';
