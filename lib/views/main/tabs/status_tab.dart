@@ -131,18 +131,12 @@ class _StatusTabState extends State<StatusTab> {
 
   Future<void> _pickAndPostImageStatus() async {
     try {
-      final cameraStatus = await Permission.camera.request();
-      final photosStatus = await Permission.photos.request();
-      
-      if (!cameraStatus.isGranted || !photosStatus.isGranted) {
-        Get.snackbar(
-          "Permissions Required",
-          "Camera and Photo Gallery permissions are necessary to capture and upload your status update! 📸✨",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return;
+      // Graceful non-blocking background permission request 
+      try {
+        await Permission.camera.request();
+        await Permission.photos.request();
+      } catch (e) {
+        print("Permission request skipped: $e");
       }
 
       final picker = ImagePicker();
