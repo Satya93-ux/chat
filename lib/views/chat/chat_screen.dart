@@ -20,11 +20,13 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isTyping = false;
+  late final Stream<List<MessageModel>> _messagesStream;
 
   @override
   void initState() {
     super.initState();
     _messageController.addListener(_onTextChanged);
+    _messagesStream = Get.find<ChatController>().getMessagesStream(widget.contact.uid);
   }
 
   @override
@@ -202,7 +204,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     : const Color(0xFFF1F5F9), // Custom light backdrop color
               ),
               child: StreamBuilder<List<MessageModel>>(
-                stream: chatController.getMessagesStream(widget.contact.uid),
+                stream: _messagesStream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());

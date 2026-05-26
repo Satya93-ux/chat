@@ -6,8 +6,21 @@ import 'package:chat/controllers/chat_controller.dart';
 import 'package:chat/views/chat/chat_screen.dart';
 import 'package:chat/views/chat/contacts_screen.dart';
 
-class ChatsTab extends StatelessWidget {
+class ChatsTab extends StatefulWidget {
   const ChatsTab({super.key});
+
+  @override
+  State<ChatsTab> createState() => _ChatsTabState();
+}
+
+class _ChatsTabState extends State<ChatsTab> {
+  late final Stream<List<ChatModel>> _chatsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatsStream = Get.find<ChatController>().getChatsStream();
+  }
 
   String _formatTimestamp(DateTime dateTime) {
     final now = DateTime.now();
@@ -42,7 +55,7 @@ class ChatsTab extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<List<ChatModel>>(
-        stream: chatController.getChatsStream(),
+        stream: _chatsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -64,7 +77,7 @@ class ChatsTab extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.chat_bubble_outline_rounded,
+                     Icons.chat_bubble_outline_rounded,
                     size: 72,
                     color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
                   ),

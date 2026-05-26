@@ -24,6 +24,13 @@ class _StatusTabState extends State<StatusTab> {
     "0xFF8B5CF6", // Purple
   ];
   int _selectedBgIndex = 0;
+  late final Stream<List<StatusModel>> _statusesStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _statusesStream = Get.find<ChatController>().getStatusesStream();
+  }
 
   @override
   void dispose() {
@@ -198,7 +205,6 @@ class _StatusTabState extends State<StatusTab> {
 
   @override
   Widget build(BuildContext context) {
-    final chatController = Get.find<ChatController>();
     final authController = Get.find<AuthController>();
     final theme = Theme.of(context);
 
@@ -211,7 +217,7 @@ class _StatusTabState extends State<StatusTab> {
         children: [
           // My Status card
           StreamBuilder<List<StatusModel>>(
-            stream: chatController.getStatusesStream(),
+            stream: _statusesStream,
             builder: (context, snapshot) {
               final statuses = snapshot.data ?? [];
               final myStatuses = statuses.where((s) => s.userId == authController.currentUser?.uid).toList();
@@ -351,7 +357,7 @@ class _StatusTabState extends State<StatusTab> {
           
           Expanded(
             child: StreamBuilder<List<StatusModel>>(
-              stream: chatController.getStatusesStream(),
+              stream: _statusesStream,
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());

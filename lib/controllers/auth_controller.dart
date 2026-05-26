@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:chat/models/user_model.dart';
 import 'package:chat/services/firebase_service.dart';
 import 'package:chat/services/mock_data_service.dart';
@@ -47,7 +48,10 @@ class AuthController extends GetxController {
   Future<void> _saveUserLocally(UserModel user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('cached_user', jsonEncode(user.toMap()));
+      final map = user.toMap();
+      // Replace the Cloud Firestore Timestamp object with its ISO 8601 string representation so jsonEncode works perfectly!
+      map['lastSeen'] = user.lastSeen.toIso8601String();
+      await prefs.setString('cached_user', jsonEncode(map));
       await prefs.setBool('is_demo_mode', isDemoMode);
     } catch (e) {
       print("Error saving user locally: $e");
@@ -71,7 +75,16 @@ class AuthController extends GetxController {
       if (userStr != null) {
         final savedDemoMode = prefs.getBool('is_demo_mode') ?? true;
         _isDemoMode.value = savedDemoMode;
-        return UserModel.fromMap(jsonDecode(userStr));
+        
+        final Map<String, dynamic> map = jsonDecode(userStr);
+        // Convert the stored ISO 8601 string back into a Cloud Firestore Timestamp object
+        if (map['lastSeen'] != null) {
+          final date = DateTime.parse(map['lastSeen']);
+          map['lastSeen'] = Timestamp.fromDate(date);
+        } else {
+          map['lastSeen'] = Timestamp.now();
+        }
+        return UserModel.fromMap(map);
       }
     } catch (e) {
       print("Error loading local user: $e");
@@ -107,8 +120,12 @@ class AuthController extends GetxController {
       if (fbUser != null) {
         final details = await _firebaseService.getUserDetails(fbUser.uid);
         if (details != null) {
-          _currentUser.value = details;
-          await _saveUserLocally(details);
+          // Merge Firebase Auth email to ensure it is never empty or lost
+          final mergedUser = details.copyWith(
+            email: details.email.isNotEmpty ? details.email : (fbUser.email ?? ''),
+          );
+          _currentUser.value = mergedUser;
+          await _saveUserLocally(mergedUser);
         } else {
           // Robust defensive fallback
           final fallbackUser = UserModel(
@@ -148,8 +165,11 @@ class AuthController extends GetxController {
         if (fbUser != null) {
           final details = await _firebaseService.getUserDetails(fbUser.uid);
           if (details != null) {
-            _currentUser.value = details;
-            await _saveUserLocally(details);
+            final mergedUser = details.copyWith(
+              email: details.email.isNotEmpty ? details.email : (fbUser.email ?? ''),
+            );
+            _currentUser.value = mergedUser;
+            await _saveUserLocally(mergedUser);
           }
         }
       }
@@ -189,7 +209,9 @@ class AuthController extends GetxController {
           final details = await _firebaseService.getUserDetails(fbUser.uid);
           UserModel activeUser;
           if (details != null) {
-            activeUser = details;
+            activeUser = details.copyWith(
+              email: details.email.isNotEmpty ? details.email : (fbUser.email ?? ''),
+            );
           } else {
             // Robust defensive fallback
             activeUser = UserModel(

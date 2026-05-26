@@ -4,12 +4,24 @@ import 'package:chat/controllers/chat_controller.dart';
 import 'package:chat/models/call_model.dart';
 import 'package:intl/intl.dart';
 
-class CallsTab extends StatelessWidget {
+class CallsTab extends StatefulWidget {
   const CallsTab({super.key});
 
   @override
+  State<CallsTab> createState() => _CallsTabState();
+}
+
+class _CallsTabState extends State<CallsTab> {
+  late final Stream<List<CallModel>> _callsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _callsStream = Get.find<ChatController>().getCallLogsStream();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final chatController = Get.find<ChatController>();
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -17,7 +29,7 @@ class CallsTab extends StatelessWidget {
         title: const Text("Calls"),
       ),
       body: StreamBuilder<List<CallModel>>(
-        stream: chatController.getCallLogsStream(),
+        stream: _callsStream,
         builder: (context, snapshot) {
           // Loading State
           if (snapshot.connectionState == ConnectionState.waiting) {
