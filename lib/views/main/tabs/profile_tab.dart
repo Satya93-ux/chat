@@ -6,33 +6,14 @@ import 'package:chat/controllers/theme_controller.dart';
 import 'package:chat/views/auth/login_screen.dart';
 import 'package:image_picker/image_picker.dart';
 
-class ProfileTab extends StatefulWidget {
+class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
 
-  @override
-  State<ProfileTab> createState() => _ProfileTabState();
-}
-
-class _ProfileTabState extends State<ProfileTab> {
-  late AuthController _authController;
-
-  @override
-  void initState() {
-    super.initState();
-    _authController = Get.find<AuthController>();
-    print("[PROFILE TAB DEBUG] ProfileTab mounted - Triggering refreshUserProfile to fetch latest Name/Image...");
-    _authController.refreshUserProfile().then((_) {
-      print("[PROFILE TAB DEBUG] refreshUserProfile completed. Active User Name is: '${_authController.currentUser?.name}', Image URL: '${_authController.currentUser?.photoUrl}'");
-    });
-  }
-
-  void _showEditProfileSheet(BuildContext context) {
-    final bioController = TextEditingController(text: _authController.currentUser?.bio);
-    final nameController = TextEditingController(text: _authController.currentUser?.name);
+  void _showEditProfileSheet(BuildContext context, AuthController authController) {
+    final bioController = TextEditingController(text: authController.currentUser?.bio);
+    final nameController = TextEditingController(text: authController.currentUser?.name);
     final formKey = GlobalKey<FormState>();
     String? selectedImagePath;
-
-    print("[PROFILE TAB DEBUG] Opening Edit Profile sheet. Initial Name: '${nameController.text}', Bio: '${bioController.text}'");
 
     showModalBottomSheet(
       context: context,
@@ -51,11 +32,9 @@ class _ProfileTabState extends State<ProfileTab> {
                   setStateBottomSheet(() {
                     selectedImagePath = picked.path;
                   });
-                  print("[PROFILE TAB DEBUG] Image picked successfully at: $selectedImagePath");
                 }
               } catch (e) {
                 Get.snackbar("Error", "Could not pick image: $e");
-                print("[PROFILE TAB DEBUG] Image pick error: $e");
               }
             }
 
@@ -117,14 +96,14 @@ class _ProfileTabState extends State<ProfileTab> {
                                         image: FileImage(File(selectedImagePath!)),
                                         fit: BoxFit.cover,
                                       )
-                                    : (_authController.currentUser?.photoUrl != null && _authController.currentUser!.photoUrl.isNotEmpty
+                                    : (authController.currentUser?.photoUrl != null && authController.currentUser!.photoUrl.isNotEmpty
                                         ? DecorationImage(
-                                            image: NetworkImage(_authController.currentUser!.photoUrl),
+                                            image: NetworkImage(authController.currentUser!.photoUrl),
                                             fit: BoxFit.cover,
                                           )
                                         : null),
                               ),
-                              child: selectedImagePath == null && (_authController.currentUser?.photoUrl == null || _authController.currentUser!.photoUrl.isEmpty)
+                              child: selectedImagePath == null && (authController.currentUser?.photoUrl == null || authController.currentUser!.photoUrl.isEmpty)
                                   ? Icon(
                                       Icons.person_rounded,
                                       size: 48,
@@ -181,8 +160,6 @@ class _ProfileTabState extends State<ProfileTab> {
                     ElevatedButton(
                       onPressed: () async {
                         if (formKey.currentState!.validate()) {
-                          print("[PROFILE TAB DEBUG] Save clicked. Preparing to update. Name: '${nameController.text.trim()}', Bio: '${bioController.text.trim()}', localImage: '$selectedImagePath'");
-                          
                           // Dismiss the bottom sheet first so context is clean
                           Get.back();
                           
@@ -195,7 +172,7 @@ class _ProfileTabState extends State<ProfileTab> {
                             ),
                           );
                           
-                          final success = await _authController.updateProfile(
+                          final success = await authController.updateProfile(
                             name: nameController.text.trim(),
                             bio: bioController.text.trim(),
                             localImagePath: selectedImagePath,
@@ -205,7 +182,6 @@ class _ProfileTabState extends State<ProfileTab> {
                           Get.back();
                           
                           if (success) {
-                            print("[PROFILE TAB DEBUG] Profile save SUCCESS. Active profile updated.");
                             Get.snackbar(
                               "Success",
                               "Profile updated successfully! ✨",
@@ -214,10 +190,9 @@ class _ProfileTabState extends State<ProfileTab> {
                               colorText: Colors.white,
                             );
                           } else {
-                            print("[PROFILE TAB DEBUG] Profile save FAILED: ${_authController.errorMessage}");
                             Get.snackbar(
                               "Error",
-                              _authController.errorMessage ?? "Failed to update profile",
+                              authController.errorMessage ?? "Failed to update profile",
                               snackPosition: SnackPosition.BOTTOM,
                               backgroundColor: Theme.of(context).colorScheme.error,
                               colorText: Colors.white,
@@ -239,6 +214,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
   @override
   Widget build(BuildContext context) {
+    final authController = Get.find<AuthController>();
     final themeController = Get.find<ThemeController>();
     final theme = Theme.of(context);
 
@@ -255,8 +231,7 @@ class _ProfileTabState extends State<ProfileTab> {
               
               // Profile Header Card wrapped in Obx
               Obx(() {
-                final user = _authController.currentUser;
-                print("[PROFILE TAB DEBUG] Building UI with current profile state - Name: '${user?.name}', PhotoUrl: '${user?.photoUrl}'");
+                final user = authController.currentUser;
                 return Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
@@ -308,7 +283,7 @@ class _ProfileTabState extends State<ProfileTab> {
                       
                       // User Name
                       Text(
-                        (user?.name != null && user!.name.isNotEmpty) ? user.name : "Anonymous User",
+                        user?.name ?? "Anonymous User",
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -357,7 +332,7 @@ class _ProfileTabState extends State<ProfileTab> {
                       title: const Text("Edit Profile"),
                       subtitle: const Text("Update display name and status bio"),
                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                      onTap: () => _showEditProfileSheet(context),
+                      onTap: () => _showEditProfileSheet(context, authController),
                     ),
                     const Divider(height: 1, indent: 56),
                     
@@ -413,7 +388,7 @@ class _ProfileTabState extends State<ProfileTab> {
                       ),
                     );
                     
-                    await _authController.logout();
+                    await authController.logout();
                     
                     // Pop progress dialog
                     Get.back();
