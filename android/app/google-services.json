@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "213207793107",
+    "project_id": "chating-a4ae8",
+    "storage_bucket": "chating-a4ae8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:213207793107:android:e09c4ce269603ae0040326",
+        "android_client_info": {
+          "package_name": "com.example.chat_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_5rmgiUZO4Dz4Qb8ob-5dlPy4FXvju4g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:213207793107:android:4fe7c2d5be1d4904040326",
+        "android_client_info": {
+          "package_name": "com.premium.chat.chat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_5rmgiUZO4Dz4Qb8ob-5dlPy4FXvju4g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

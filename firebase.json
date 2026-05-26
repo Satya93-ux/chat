@@ -1,0 +1,31 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "chating-a4ae8",
+          "appId": "1:213207793107:android:4fe7c2d5be1d4904040326",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "chating-a4ae8",
+          "appId": "1:213207793107:ios:c1b201969cb4d6c7040326",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      }
+    },
+    "dart": {
+      "lib/firebase_options.dart": {
+        "projectId": "chating-a4ae8",
+        "configurations": {
+          "android": "1:213207793107:android:4fe7c2d5be1d4904040326",
+          "ios": "1:213207793107:ios:c1b201969cb4d6c7040326",
+          "web": "1:213207793107:web:974438e998ff7cfa040326"
+        }
+      }
+    }
+  }
+}
